@@ -1,2 +1,4 @@
 # StockAnalysis
+ URL http://localhost:8080/holdingsAccumulator?amount=20000.00&schemeNames=aditya-birla-sun-life-psu-equity-fund-direct-growth,icici-prudential-bharat-22-fof-direct-growth,sbi-energy-opportunities-fund-direct-growth,sbi-nifty-next-50-index-fund-direct-growth,icici-prudential-bse-sensex-index-fund-direct-growth,motilal-oswal-nifty-next-50-index-fund-direct-growth,hdfc-index-fund-sensex-plan-direct,dsp-blackrock-equal-nifty-50-fund-direct-growth,hsbc-nifty-next-50-index-fund-direct-growth,hdfc-nifty-next-50-index-fund-direct-growth,sbi-nifty-index-fund-direct-growth
+
 URL http://localhost:8080/?trendIndex=40&trend=high&regularFundFilter=regular&schemeCategoryDebtFundFilter=yes&schemeCategoryFilter=Other%20Scheme%20-%20Index%20Funds
