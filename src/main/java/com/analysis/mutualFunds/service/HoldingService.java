@@ -14,25 +14,35 @@ import java.util.stream.Collectors;
 @Service
 public class HoldingService {
     @Autowired
-    private RestTemplate restTemplate;
+    RestTemplate restTemplate;
 
 
-    public Map<String, Double> getHoldingData(List<FundData> fundDataList) {
-        return fundDataList.stream().filter(fundData -> {
+    public Set<String> getHoldingData(List<FundData> fundDataList, String trend, int initialIndex) {
+         return fundDataList.stream().filter(fundData -> {
             List<NavData> navDataList = fundData.getNavDataList();
-            int size = navDataList.size();
             double currentValue = Double.parseDouble(navDataList.get(0).getNav());
-            double initialValue = Double.parseDouble(navDataList.get(size - 1).getNav());
-            double profit = currentValue - initialValue;
-            double v = (profit * 100) / initialValue;
-            return v > 50;
-        }).collect(Collectors.toMap(FundData::getSchemeName, fundData -> Double.parseDouble(fundData.getNavDataList().get(0).getNav())));
+            double initialValue = Double.parseDouble(navDataList.get(initialIndex).getNav());
+           if(trend.equalsIgnoreCase("high")){
+               return currentValue > initialValue;
+           }
+           return initialValue > currentValue;
+        }).map(fundData -> {
+             String schemeName = fundData.getSchemeName();
+             String[] split = schemeName.split("-",2);
+             return split[0];
+         }).collect(Collectors.toSet());
     }
 
-    public Map<String, Double>  getHoldingDataWithAccumulated(String schemeNames) {
+    public Map<String, Double>  getHoldingDataWithAccumulated(String schemeNames, Double amount) {
         String[] schemeNamesArray = schemeNames.split(",");
         Set<String> schemeSet = Arrays.stream(schemeNamesArray).collect(Collectors.toSet());
+        return getHoldingsMap(schemeSet,amount);
+    }
+
+    private Map<String, Double> getHoldingsMap(Set<String> schemeSet, Double amount) {
         Map<String, Double> holdingsMap = new HashMap<>();
+        Map<String, Double> holdingsPercentageMap = new HashMap<>();
+        Double totalCorpus = 0.0;
         for (String schemeName : schemeSet) {
             try {
                 String url = "https://groww.in/v1/api/data/mf/web/v3/scheme/search/" + schemeName;
@@ -41,17 +51,22 @@ public class HoldingService {
                 for (StocksData data : holdings.getHoldings()) {
                     String companyName = data.getCompany_name();
                     Double corpusPer = data.getCorpus_per();
+                    totalCorpus = totalCorpus + corpusPer;
                     if (holdingsMap.containsKey(companyName)) {
-                        holdingsMap.compute(companyName, (k, value) -> corpusPer + value);
+                        holdingsMap.compute(companyName, (k, currCorpus) -> corpusPer + currCorpus);
                     } else {
                         holdingsMap.put(companyName, corpusPer);
                     }
+                }
+                for (Map.Entry<String, Double> holdingEntry : holdingsMap.entrySet()){
+                    double holdingPercentage = (holdingEntry.getValue() / totalCorpus) * amount;
+                    holdingsPercentageMap.put(holdingEntry.getKey(),holdingPercentage);
                 }
             }catch(Exception e){
                 System.out.println("Error in calling grow api for schemeName" + schemeName);
             }
         }
-        return holdingsMap.entrySet()
+        return holdingsPercentageMap.entrySet()
                 .stream()
                 .sorted(Map.Entry.<String, Double>comparingByValue().reversed())
                 .collect(Collectors.toMap(
